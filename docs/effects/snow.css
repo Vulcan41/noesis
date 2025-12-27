@@ -1,0 +1,39 @@
+/* effects/snow.css */
+.snow{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0; /* behind UI */
+}
+
+.flake{
+    position: absolute;
+    top: -12vh;
+    left: var(--x);
+    opacity: var(--o);
+    font-size: var(--s);
+    line-height: 1;
+    color: rgba(164,164,164);
+    text-shadow: 0 6px 14px rgba(0,0,0,.08);
+    user-select: none;
+    will-change: transform;
+
+    animation:
+    snow-fall var(--t) linear infinite,
+    snow-sway var(--sw) ease-in-out infinite;
+    animation-delay: var(--d);
+}
+
+@keyframes snow-fall{
+    to{ transform: translateY(130vh); }
+}
+
+@keyframes snow-sway{
+    0%,100%{ margin-left: 0; }
+    50%{ margin-left: var(--dx); }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+    .snow, .flake{ animation: none !important; }
+}

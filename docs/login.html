@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Είσοδος</title>
+
+  <style>
+    :root{
+      --brand:#8b0f1a;
+      --brand2:#b31223;
+      --ink:#1b1b1b;
+    }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--ink);
+      background:
+      repeating-linear-gradient(45deg,
+      rgba(255,255,255,1) 0 2px,
+      transparent 2px 28px),
+      repeating-linear-gradient(-45deg,
+      rgba(255,255,255,1) 0 2px,
+      transparent 2px 30px),
+      radial-gradient(circle at 50% 50%,   /* ✅ perfectly centered */
+      rgba(255,255,255,1),
+      rgba(248,248,248,0.60) 50%,
+      rgba(208,208,208,0.40) 100%
+      );
+      display:grid;
+      place-items:center;
+    }
+
+    .wrap{ width:min(500px,100%); text-align:center; }
+    .stack{ display:flex; flex-direction:column; align-items:center; }
+
+    .crest{
+      width:350px;
+      max-width:100%;
+      height:auto;
+      margin:0;
+      object-fit:contain;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.18));
+    }
+
+    .field{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      width:360px;
+      max-width:100%;
+      margin:0 auto 25px;
+      padding:6px 0;
+      border-bottom:2px solid rgba(139,15,26,.35);
+    }
+
+    .lock{ width:18px; height:18px; opacity:.75; flex:0 0 auto; }
+
+    input{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      font-size:16px;
+      padding:2px 0;
+      color:var(--ink);
+    }
+
+    input::placeholder{ color:rgba(0,0,0,.45); }
+
+    .btn{
+      width:360px;
+      max-width:100%;
+      border:none;
+      border-radius:5px;
+      padding:12px 0;
+      font-size:16px;
+      font-weight:650;
+      letter-spacing:.2px;
+      color:#fff;
+      cursor:pointer;
+      background:#910b17;
+      transition: background .2s ease;
+    }
+
+    .btn:hover{ background:#a0101c; }
+
+    .msg{
+      min-height:20px;
+      margin-top:40px;
+      font-size:14px;
+      color:#b00020;
+      opacity:0;                       /* ⬅ start hidden */
+      transition: opacity 0.6s ease;   /* ⬅ fade duration */
+    }
+
+
+    @media (max-width:420px){
+      .crest{ width:260px; }
+    }
+
+    /* Shake animation (subtle) */
+    @keyframes fieldShake{
+      0%   { transform: translateX(0); }
+      20%  { transform: translateX(-3px); }
+      40%  { transform: translateX(3px); }
+      60%  { transform: translateX(-2px); }
+      80%  { transform: translateX(2px); }
+      100% { transform: translateX(0); }
+    }
+
+    .field.shake{
+      animation: fieldShake 0.35s ease;
+    }
+
+  </style>
+
+  <!-- ✅ Snow effect (CSS must be inside head) -->
+  <link rel="stylesheet" href="effects/snow.css">
+
+  <script>
+    // ✅ ONE-LINE boolean switch:
+    window.ENABLE_SNOW = false;   // set false to disable
+
+    // Optional controls:
+    window.SNOW_COUNT = 38;                  // intensity
+    window.SNOW_SYMBOLS = ["❄","❄","❄","✻"]; // mostly snowflakes
+  </script>
+</head>
+
+<body>
+<div class="wrap">
+  <!-- ✅ Autocomplete off at form level -->
+  <form class="stack" autocomplete="off">
+    <img class="crest" src="assets/crest.png" alt="School crest" />
+
+    <div class="field">
+      <svg class="lock" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 10V8.2C7 5.4 9.2 3.2 12 3.2C14.8 3.2 17 5.4 17 8.2V10"
+              stroke="rgba(0,0,0,.65)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M6.5 10H17.5C18.6 10 19.5 10.9 19.5 12V18.2C19.5 19.3 18.6 20.2 17.5 20.2H6.5C5.4 20.2 4.5 19.3 4.5 18.2V12C4.5 10.9 5.4 10 6.5 10Z"
+              stroke="rgba(0,0,0,.65)" stroke-width="2"/>
+        <path d="M12 14.2V16.8"
+              stroke="rgba(0,0,0,.65)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+
+      <!-- ✅ Use new-password to discourage autofill -->
+      <input
+              id="pw"
+              type="password"
+              placeholder="Κωδικός Πρόσβασης"
+              autocomplete="new-password"
+              autocapitalize="off"
+              spellcheck="false"
+      />
+    </div>
+
+    <button class="btn" id="go" type="button">Είσοδος</button>
+    <div class="msg" id="msg"></div>
+  </form>
+</div>
+
+<!-- ✅ Load snow JS after body so it can append properly -->
+<script src="effects/snow.js"></script>
+
+<script>
+  const SITE_PASSWORD = "yes";
+  const ERROR_VISIBLE_MS = 3000;
+  const AUTH_KEY = "site_authed";
+
+  const pw  = document.getElementById("pw");
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("go");
+
+  let clearMsgTimer = null;
+
+  // ✅ Force-clear any browser autofill on load
+  window.addEventListener("pageshow", () => {pw.value = "";});
+
+  if (sessionStorage.getItem(AUTH_KEY) === "yes") {
+    window.location.href = "index.html";
+  }
+
+  function showError(text) {
+    msg.textContent = text;
+    msg.style.opacity = "1";   // ⬅ show message
+
+    // trigger field shake (unchanged)
+    const field = document.querySelector(".field");
+    field.classList.remove("shake");
+    void field.offsetWidth;
+    field.classList.add("shake");
+
+    if (clearMsgTimer !== null) clearTimeout(clearMsgTimer);
+    clearMsgTimer = setTimeout(() => {
+      msg.style.opacity = "0"; // ⬅ fade out
+    }, ERROR_VISIBLE_MS);
+  }
+
+
+
+  function submit() {
+    if (pw.value === SITE_PASSWORD) {
+      sessionStorage.setItem(AUTH_KEY, "yes");
+      window.location.href = "index.html";
+      return;
+    }
+    pw.value = "";
+    pw.focus();
+    showError("Λάθος κωδικός. Δοκιμάστε ξανά.");
+  }
+
+  btn.addEventListener("click", submit);
+
+  pw.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+</script>
+</body>
+</html>

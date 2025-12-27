@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="el">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz 1 | Κβαντική Μηχανική I</title>
+
+    <!-- AUTH -->
+    <script>
+        if (sessionStorage.getItem("site_authed") !== "yes") {
+            window.location.href = "../login.html";
+        }
+    </script>
+
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+    <style>
+        body{
+            margin:0;
+            min-height:100vh;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            color:#1b1b1b;
+            background:
+            repeating-linear-gradient(45deg, rgba(255,255,255,1) 0 2px, transparent 2px 28px),
+            repeating-linear-gradient(-45deg, rgba(255,255,255,1) 0 2px, transparent 2px 30px),
+            radial-gradient(circle at 50% 35%,
+            rgba(255,255,255,1),
+            rgba(248,248,248,0.65) 55%,
+            rgba(210,210,210,0.45) 100%
+            );
+        }
+
+        /* Title block */
+        .title-wrap{
+            max-width: 900px;
+            margin: 50px auto 22px;
+            padding: 0 16px;
+            text-align: center;
+        }
+
+        .page-title{
+            margin: 0;
+            font-size: 22px;
+            font-weight: 650;
+            color: rgba(0,0,0,.88);
+        }
+
+        .page-title + .page-title{
+            margin-top: 6px;
+            font-size: 22px;
+            font-weight: 650;
+        }
+
+        .page-subtitle{
+            margin: 16px 0 0;
+            font-size: 14px;
+            color: rgba(0,0,0,.55);
+            line-height: 1.5;
+        }
+
+        /* White quiz card */
+        .container{
+            max-width: 800px;
+            margin: 50px auto 60px;
+            background: #fff;
+            padding: 32px;
+            border-radius: 10px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.12);
+        }
+
+        /* Question line */
+        .qline{
+            margin: 0 0 18px;
+            font-weight: 600;
+        }
+
+        .qnum{
+            font-size: 16px;
+            font-weight: 700;
+            margin-right: 10px;
+            color: rgba(0,0,0,.85);
+        }
+
+        .option{
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 2px 12px;   /* closer together */
+            padding: 6px 36px 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            min-height: 14px;          /* don’t use 15px; too small */
+        }
+
+        .option input[type="radio"]{
+            appearance: none;
+            -webkit-appearance: none;
+
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0,0,0,.45);
+            border-radius: 3px;
+            background: transparent;
+
+            display: grid;             /* important for centering ::before */
+            place-items: center;
+            flex: 0 0 auto;
+
+            cursor: pointer;
+        }
+
+        /* inner filled square with gap */
+        .option input[type="radio"]::before{
+            content: "";
+            width: 6px;
+            height: 6px;
+            background: transparent;
+            border-radius: 1px;
+        }
+
+        .option input[type="radio"]:checked{
+            border-color: rgba(0,0,0,.55);
+        }
+
+        .option input[type="radio"]:checked::before{
+            background: rgba(0,0,0,.45);
+        }
+
+
+
+
+        /* Correct / wrong highlight */
+        .option.correct{
+            background: rgba(46,125,50,.10);
+            border-left: 3px solid #2e7d32;
+        }
+
+        .option.wrong{
+            background: rgba(176,0,32,.08);
+            border-left: 3px solid #b00020;
+        }
+
+        /* Correct answer shown BUT student left it unanswered */
+        .option.correct-unanswered{
+            background: rgba(0,0,0,.06);
+            border-left: 3px solid rgba(0,0,0,.25);
+        }
+
+        /* Optional: gray checkmark instead of green */
+        .option.correct-unanswered::after{
+            content: "✓";
+            color: rgba(0,0,0,.35);
+        }
+
+
+        /* ✓ / ✕ positioning (far right) */
+        .option::after{
+            content: "";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .option.correct::after{
+            content: "✓";
+            color: #2e7d32;
+        }
+
+        .option.wrong::after{
+            content: "✕";
+            color: #b00020;
+        }
+
+        /* Show answers button */
+        #showAnswersBtn{
+            color: rgba(255,255,255);
+            margin-top: 0px;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: rgba(145,11,23,1);
+            font-weight: 600;
+        }
+
+        #showAnswersBtn:hover{
+            background: rgba(160,16,28,1);
+        }
+
+        .question-divider{
+            height: 1px;
+            background: rgba(0,0,0,.12);
+            margin: 28px 0;
+        }
+
+        .hidden{ display:none; }
+
+        .quiz-actions{
+            max-width: 800px;
+            margin: 0 auto 60px;
+            padding: 0 32px;
+
+            display: flex;
+            flex-direction: column;   /* ← STACK vertically */
+            align-items: center;      /* ← center horizontally */
+            gap: 12px;                /* ← space between button & score */
+        }
+
+        .score-main{
+            font-size: 50px;
+            font-weight: 700;
+            color: #910b17;          /* brand red */
+            line-height: 1;
+        }
+
+        .score-scale{
+            font-size: 20px;
+            font-weight: 700;
+            color: rgba(0,0,0);
+        }
+
+        .hidden{
+            display: none;
+        }
+
+        /* ===== 10/10 celebration ===== */
+        .celebration{
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .star{
+            position: absolute;
+            font-size: 18px;
+            opacity: 0;
+            transform: translateY(0) scale(0.6) rotate(0deg);
+            animation: starPop 1200ms ease-out forwards;
+            text-shadow: 0 8px 18px rgba(0,0,0,.18);
+        }
+
+        /* pop + float + fade */
+        @keyframes starPop{
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.5);
+            }
+            20% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            80% {
+                opacity: 1;
+                transform: translateY(-140px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-200px) scale(0.9);
+            }
+        }
+
+
+
+
+
+    </style>
+
+</head>
+
+<body>
+
+<!-- TITLE CONTAINER -->
+<div class="title-wrap">
+    <h1 class="page-title">Κβαντική Θεωρία I</h1>
+    <h2 class="page-title">Πρώτο Κριτήριο Αυτοαξιολόγησης</h2>
+    <p class="page-subtitle">Θεμελιώδεις Αρχές και Ερμηνεία της Κοπεγχάγης</p>
+</div>
+
+<!-- QUIZ CARD -->
+<div class="container">
+
+    <!---------------->
+    <!-- QUESTION 1 -->
+    <!---------------->
+    <div class="question" data-correct="b">
+        <p class="qline"><span class="qnum">1.</span>Μία κυματοσυνάρτηση είναι φυσικώς αποδεκτή όταν είναι:</p>
+        <label class="option">
+            <input type="radio" name="q1" value="a">
+            <span>πραγματική</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q1" value="b">
+            <span>τετραγωνικά ολοκληρώσιμη</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q1" value="c">
+            <span>και πραγματική και τετραγωνικά ολοκληρώσιμη</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q1" value="d">
+            <span>τίποτα από τα παραπάνω</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 2 -->
+    <!---------------->
+    <div class="question" data-correct="b">
+        <p class="qline"><span class="qnum">2.</span>Η ποσότητα $\psi^*\psi$:</p>
+        <label class="option">
+            <input type="radio" name="q2" value="a">
+            <span>είναι καθαρά μιγαδικό μέγεθος</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q2" value="b">
+            <span>οφείλει να είναι πάντα θετική ποσότητα</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q2" value="c">
+            <span>οφείλει να είναι πάντα αρνητική ποσότητα</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q2" value="d">
+            <span>εξαρτάται από τον χρόνο</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 3 -->
+    <!---------------->
+    <div class="question" data-correct="a">
+        <p class="qline"><span class="qnum">3.</span>Οι φυσικές μονάδες μέτρισης μίας διδιάστατης (2D) κυματοσυνάρτησης είναι:</p>
+        <label class="option">
+            <input type="radio" name="q3" value="a">
+            <span>\( \frac{1}L \)</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q3" value="b">
+            <span>\( \frac{1}{\sqrt{L}} \)</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q3" value="c">
+            <span>\( \frac{1}{L^2} \)</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q3" value="d">
+            <span>\( \frac{1}{\sqrt{L^3}} \)</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 4 -->
+    <!---------------->
+    <div class="question" data-correct="b">
+        <p class="qline"><span class="qnum">4.</span>Η Συνθήκη Κανονικοποίησης:</p>
+        <label class="option">
+            <input type="radio" name="q4" value="a">
+            <span>επιβάλλει σωστές φυσικές μονάδες στην έννοια της πιθανότητας</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q4" value="b">
+            <span>απαιτεί το άθροισμα των πιθανοτήτων σε όλον τον χώρο να είναι μονάδα</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q4" value="c">
+            <span>οφείλει να λαμβάνεται υπόψιν μόνο εάν το ζητήται</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q4" value="d">
+            <span>δεν περιγράφεται σωστά από κανένα από τα παραπάνω</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 5 -->
+    <!---------------->
+    <div class="question" data-correct="d">
+        <p class="qline"><span class="qnum">5.</span>Η σταθερά κανονικοποίησης \(N\) της κυματοσυνάρτησης \(\psi(x) = N x e^{x^2/2}\) είναι:</p>
+        <label class="option">
+            <input type="radio" name="q5" value="a">
+            <span>$\frac{1}{\sqrt{\pi}}$</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q5" value="b">
+            <span>$\frac{2}{\pi^{1/4}}$</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q5" value="c">
+            <span>$\frac{\sqrt{2}}{\sqrt{\pi}}$</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q5" value="d">
+            <span>$\frac{\sqrt{2}}{\pi^{1/4}}$</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 6 -->
+    <!---------------->
+    <div class="question" data-correct="b">
+        <p class="qline"><span class="qnum">6.</span>Η κυματοσυνάρτηση $\psi(x)=N\sin(kx)$:</p>
+        <label class="option">
+            <input type="radio" name="q6" value="a">
+            <span>είναι τετραγωνικά ολοκληρώσιμη σε όλον τον χώρο</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q6" value="b">
+            <span>είναι τετραγωνικά ολοκληρώσιμη σε πεπερασμένο υποσύνολο του χώρου</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q6" value="c">
+            <span>δεν τετραγωνικά ολοκληρώσιμη πουθενά</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q6" value="d">
+            <span>Η τετραγωνική ολοκληρωσιμότητά της εξαρτάται από την τιμή της παραμέτρου \(k\)</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 7 -->
+    <!---------------->
+    <div class="question" data-correct="c">
+        <p class="qline"><span class="qnum">7.</span>Μία στάσιμη κατάσταση:</p>
+        <label class="option">
+            <input type="radio" name="q7" value="a">
+            <span>περιγράφει σύστημα με μέση θέση μηδέν</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q7" value="b">
+            <span>έχει πάντα καλά καθορισμένη θέση</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q7" value="c">
+            <span>έχει πάντα καλά καθορισμένη ενέργεια</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q7" value="d">
+            <span>δεν περιγράφεται σωστά από κανένα από τα παραπάνω</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 8 -->
+    <!---------------->
+    <div class="question" data-correct="d">
+        <p class="qline"><span class="qnum">8.</span>Ένα κβαντικό σύστημα:</p>
+        <label class="option">
+            <input type="radio" name="q8" value="a">
+            <span>βρίσκεται σε κατάσταση επαλληλίας εάν έχει καθορισμένη ενέργεια</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q8" value="b">
+            <span>έχει πάντα $\Delta E \neq 0$ εάν έχει προηγηθεί μέτρηση</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q8" value="c">
+            <span>έχει πάντα μέση θέση που εξαρτάται από τον χρόνο</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q8" value="d">
+            <span>δεν περιγράφεται σωστά από κανένα από τα παραπάνω</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 9 -->
+    <!---------------->
+    <div class="question" data-correct="d">
+        <p class="qline"><span class="qnum">9.</span>Η κατάσταση επαλληλίας $\psi = \frac{1}{\sqrt{6}}\psi_1 + \frac{1}{\sqrt{3}}\psi_2 + \frac{1}{\sqrt{2}}\psi_3$:</p>
+        <label class="option">
+            <input type="radio" name="q9" value="a">
+            <span>δεν είναι κανονικοποιημένη</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q9" value="b">
+            <span>είναι πιθανότερο να καταρεύσει στην $\psi_1$ σε περίπτωση μέτρησης</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q9" value="c">
+            <span>είναι πιθανότερο να καταρεύσει στην $\psi_2$ σε περίπτωση μέτρησης</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q9" value="d">
+            <span>είναι πιθανότερο να καταρεύσει στην $\psi_3$ σε περίπτωση μέτρησης</span>
+        </label>
+    </div>
+
+    <div class="question-divider"></div>
+
+    <!---------------->
+    <!-- QUESTION 10 -->
+    <!---------------->
+    <div class="question" data-correct="a">
+        <p class="qline"><span class="qnum">10.</span>Θεωρείστε την επαλληλία $\psi = c_1\psi_1 + c_2\psi_2$. Αν οι $\psi_1$ και $\psi_2$ έχουν περιττή ομοτιμία (parity) τότε:</p>
+        <label class="option">
+            <input type="radio" name="q10" value="a">
+            <span>τόσο η μέση θέση όσο και η μέση ορμή είναι εξαρτημένη από τον χρόνο</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q10" value="b">
+            <span>η μέση θέση είναι εξαρτημένη από τον χρόνο αλλά όχι η μέση ορμή</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q10" value="c">
+            <span>η μέση ορμή είναι εξαρτημένη από τον χρόνο αλλά όχι η μέση θέση</span>
+        </label>
+        <label class="option">
+            <input type="radio" name="q10" value="d">
+            <span>ούτε η μέση θέση αλλά ούτε και η μέση ορμή είναι εξαρτημένη από τον χρόνο</span>
+        </label>
+    </div>
+
+</div>
+
+<div class="quiz-actions">
+    <button id="showAnswersBtn" type="button">
+        Βαθμολόγηση Απαντήσεων
+    </button>
+
+    <div id="scoreBox" class="score hidden"></div>
+
+</div>
+
+<script>
+    document.getElementById("showAnswersBtn").addEventListener("click", () => {
+        const questions = document.querySelectorAll(".question");
+        let correctCount = 0;
+
+        questions.forEach(q => {
+            const correct = q.dataset.correct;
+            const picked = q.querySelector('input[type="radio"]:checked');
+
+            // RESET state
+            q.querySelectorAll(".option").forEach(opt => {
+                opt.classList.remove("correct", "wrong", "correct-unanswered");
+            });
+
+            const correctInput = q.querySelector(`input[value="${correct}"]`);
+
+            // Answered correctly
+            if (picked && picked.value === correct) {
+                correctCount++;
+                picked.closest(".option").classList.add("correct");
+            }
+
+            // Answered wrong
+            if (picked && picked.value !== correct) {
+                picked.closest(".option").classList.add("wrong");
+                if (correctInput) {
+                    correctInput.closest(".option").classList.add("correct");
+                }
+            }
+
+            // Unanswered → gray highlight on correct option
+            if (!picked && correctInput) {
+                correctInput.closest(".option").classList.add("correct-unanswered");
+            }
+        });
+
+
+        // Score (animate 0 → score)
+        const rawScore = (correctCount / questions.length) * 10;
+        const scoreBox = document.getElementById("scoreBox");
+        scoreBox.classList.remove("hidden");
+
+        animateScore(scoreBox, rawScore, 1100); // duration in ms (change if you want)
+
+        if (rawScore === 10) {
+            celebratePerfectScore();
+        }
+
+
+    });
+</script>
+
+<script>
+    document.querySelectorAll('.question').forEach(question => {
+        let lastChecked = null;
+
+        question.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('click', () => {
+                if (lastChecked === radio) {
+                    radio.checked = false;   // uncheck
+                    lastChecked = null;
+                } else {
+                    lastChecked = radio;     // remember selection
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+    function celebratePerfectScore(){
+        // safety: remove any old overlay
+        document.querySelectorAll(".celebration").forEach(el => el.remove());
+
+        const overlay = document.createElement("div");
+        overlay.className = "celebration";
+        document.body.appendChild(overlay);
+
+        const symbols = ["✦", "✧", "★"];
+        const starCount = 55;
+
+        for (let i = 0; i < starCount; i++){
+            const s = document.createElement("span");
+            s.className = "star";
+            s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+
+            // random position
+            const left = Math.random() * 100;
+            const top = Math.random() * 100;
+
+            // random timing / size
+            const delay = Math.random() * 350;          // ms
+            const size = 14 + Math.random() * 16;       // px
+            const dur = 2500 + Math.random() * 1000; // stars live 2.5–3.5s
+
+            s.style.left = left + "vw";
+            s.style.top = top + "vh";
+            s.style.fontSize = size + "px";
+            s.style.animationDuration = dur + "ms";
+            s.style.animationDelay = delay + "ms";
+
+            // warm/gold-ish + some whites
+            const colors = ["#ffffff", "#fff3c4", "#ffd36b", "#ffe7a8"];
+            s.style.color = colors[Math.floor(Math.random() * colors.length)];
+
+            overlay.appendChild(s);
+        }
+
+        setTimeout(() => overlay.remove(), 4200);
+
+    }
+</script>
+
+<script>
+    function animateScore(scoreBox, rawScore, durationMs = 1000){
+        // if perfect integer (like 10), show no decimals
+        const targetIsInt = Number.isInteger(rawScore);
+
+        const start = performance.now();
+        const from = 0;
+        const to = rawScore;
+
+        function format(val){
+            // while animating: keep one decimal for smoothness
+            // but final render: obey integer rule
+            if (val >= to - 0.0001){
+                return targetIsInt ? String(Math.round(to)) : to.toFixed(1);
+            }
+            return val.toFixed(1);
+        }
+
+        function tick(now){
+            const t = Math.min(1, (now - start) / durationMs);
+            // easeOutCubic
+            const eased = 1 - Math.pow(1 - t, 3);
+            const current = from + (to - from) * eased;
+
+            scoreBox.innerHTML =
+            `<span class="score-main">${format(current)}</span><span class="score-scale">/10</span>`;
+
+            if (t < 1) requestAnimationFrame(tick);
+            else {
+                // ensure final exact formatting
+                scoreBox.innerHTML =
+                `<span class="score-main">${targetIsInt ? String(Math.round(to)) : to.toFixed(1)}</span><span class="score-scale">/10</span>`;
+            }
+        }
+
+        requestAnimationFrame(tick);
+    }
+</script>
+
+
+
+
+</body>
+</html>
